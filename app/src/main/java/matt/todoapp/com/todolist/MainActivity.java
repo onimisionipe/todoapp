@@ -6,19 +6,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
 
-import com.orm.SugarContext;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+    private ArrayAdapter<String> todoAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SugarContext.init(this);
         setContentView(R.layout.activity_main);
+        updateUI();
     }
 
     @Override
@@ -42,15 +48,45 @@ public class MainActivity extends AppCompatActivity {
                                 String task = String.valueOf(todoEditText.getText());
                                 Todo todo = new Todo(task);
                                 todo.save();
+                                updateUI();
+
                             }
                         })
                         .setNegativeButton("Cancel",null)
                         .create();
                 dialog.show();
+                return true;
 
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void updateUI(){
+        final ListView listview = (ListView) findViewById(R.id.list_todo);
+        final List<Todo> todos = Todo.listAll(Todo.class);
+        final ArrayList<String> list = new ArrayList<>();
+        ListIterator itr = todos.listIterator();
+        while(itr.hasNext()){
+            Todo elem = (Todo)itr.next();
+            list.add(elem.title);
+        }
+        if(todoAdapter == null){
+            todoAdapter = new ArrayAdapter<>(this,R.layout.item_todo,R.id.title, list);
+            listview.setAdapter(todoAdapter);
+        } else {
+            todoAdapter.clear();
+            todoAdapter.addAll(list);
+            todoAdapter.notifyDataSetChanged();
+        }
+    }
+
+    public void deleteTask(View view){
+        View parent = (View) view.getParent();
+        TextView textview = (TextView) parent.findViewById(R.id.title);
+        String task = String.valueOf(textview.getText());
+        Todo.deleteAll(Todo.class, "title=?",task);
+        updateUI();
     }
 
 }
